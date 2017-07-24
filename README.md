@@ -1,4 +1,4 @@
-# dreamcoin-sales-contracts
+# Token Sale Contracts
 
 A collection of contracts used for typical token sales.
 They are based on Consensys' standard implementation of ERC20.
