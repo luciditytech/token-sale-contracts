@@ -1,0 +1,9 @@
+{
+  "total": 1000000000000000000,
+  "name": "DreamCoin",
+  "symbol": "DRM",
+  "decimals": 9,
+  "price": "57140",
+  "startBlock": "3939181",
+  "freezeBlock": "3937741"
+}
