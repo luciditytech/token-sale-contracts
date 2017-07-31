@@ -5,5 +5,6 @@
   "decimals": 9,
   "price": "2557181690000000",
   "startBlock": "100",
-  "freezeBlock": "200"
+  "freezeBlock": "200",
+  "cap": "20000000"
 }

@@ -108,33 +108,38 @@ var getBalanceOf = function(address) {
 
 contract('Sales', function(accounts) {
   var instance;
+  var snapshotId;
   var ownerAccount = accounts[0];
   var buyerAccount = accounts[1];
   var conf = JSON.parse(fs.readFileSync('./conf/development.json'));
 
+  beforeEach(function() {
+    takeSnapshot()
+      .then(function(_snapshotId) {
+        snapshotId = _snapshotId;
+
+        return Sales
+          .deployed()
+          .then(function(_instance) {
+            instance = _instance;
+          })
+      })
+  });
+
+  afterEach(function() {
+    return resetSnapshot(snapshotId);
+  });
+
   describe('when the contract was deployed', function() {
-    it('should set the expected number of tokens', function() {
-      return Sales.deployed()
-        .then(function(_instance) {
-          instance = _instance;
-        })
-        .then(function() {
-          return getTotalSupply();
-        })
+    it('should set the expected total supply', function() {
+      return getTotalSupply()
         .then(function(result) {
           assert.equal(result, 1000000000000000000);
         });
     });
 
     it('should set the expected number of tokens for the contract as owner', function() {
-      return Sales
-        .deployed()
-        .then(function(_instance) {
-          instance = _instance;
-        })
-        .then(function() {
-          return getBalanceOf(instance.address);
-        })
+      return getBalanceOf(instance.address)
         .then(function(result) {
           assert.equal(result, 1000000000000000000);
         });
@@ -145,32 +150,19 @@ contract('Sales', function(accounts) {
     var snapshotId;
 
     beforeEach(function() {
-      return takeSnapshot()
-        .then(function(_snapshotId) {
-          snapshotId = _snapshotId;
-          var blockToMine = new BN(conf['startBlock'], 10);
-          return mineBlock(blockToMine);
-        });
-    });
-
-    afterEach(function() {
-      return resetSnapshot(snapshotId);
+      var blockToMine = new BN(conf['startBlock'], 10);
+      return mineBlock(blockToMine);
     });
 
     describe('when there are enough tokens left', function() {
       it('should set the expect eth balance', function() {
-        return Sales
-          .deployed()
-          .then(function(_instance) {
-            instance = _instance;
-          })
-          .then(function() {
-            var value = new BN('10', 10);
+        // var wei = web3.toWei('0.0030', 'Ether');
+        var value = new BN('10', 10);
 
-            return instance.purchaseTokens({
-              from: buyerAccount,
-              value: value.mul(new BN(conf['price'], 10))
-            });
+        return instance
+          .purchaseTokens({
+            from: buyerAccount,
+            value: value.mul(new BN(conf['price'], 10))
           })
           .then(function() {
             return getBalanceOf(buyerAccount);
@@ -180,41 +172,28 @@ contract('Sales', function(accounts) {
           });
       });
     });
+
+    describe('when the cap has been reached', function() {
+
+    });
   });
 
   describe('a user tries to buy coins outside period', function() {
-    var snapshotId;
-
     describe('after the sale period', function() {
       beforeEach(function() {
-        return takeSnapshot()
-          .then(function(_snapshotId) {
-            snapshotId = _snapshotId;
+        var blockToMine = new BN(conf['freezeBlock'], 10)
+          .add(new BN('10', 10));
 
-            var blockToMine = new BN(conf['freezeBlock'], 10)
-              .add(new BN('10', 10));
-
-            return mineBlock(blockToMine);
-          });
-      });
-
-      afterEach(function() {
-        return resetSnapshot(snapshotId);
+        return mineBlock(blockToMine);
       });
 
       it('should throw an exception', function(done) {
-        Sales
-          .deployed()
-          .then(function(_instance) {
-            instance = _instance;
-          })
-          .then(function() {
-            var value = new BN('10', 10);
-  
-            return instance.purchaseTokens({
-              from: buyerAccount,
-              value: value.mul(new BN(conf['price'], 10))
-            });
+        var value = new BN('10', 10);
+
+        instance
+          .purchaseTokens({
+            from: buyerAccount,
+            value: value.mul(new BN(conf['price'], 10))
           })
           .then(function() {
             return getBalanceOf(buyerAccount);
@@ -231,34 +210,19 @@ contract('Sales', function(accounts) {
 
     describe('before the sale period', function() {
       beforeEach(function() {
-        return takeSnapshot()
-          .then(function(_snapshotId) {
-            snapshotId = _snapshotId;
+        var blockToMine = new BN(conf['startBlock'], 10)
+          .sub(new BN('10', 10));
 
-            var blockToMine = new BN(conf['startBlock'], 10)
-              .sub(new BN('10', 10));
-
-            return mineBlock(blockToMine);
-          });
-      });
-
-      afterEach(function() {
-        return resetSnapshot(snapshotId);
+        return mineBlock(blockToMine);
       });
 
       it('should throw an exception', function(done) {
-        Sales
-          .deployed()
-          .then(function(_instance) {
-            instance = _instance;
-          })
-          .then(function() {
-            var value = new BN('100', 10);
-  
-            return instance.purchaseTokens({
-              from: buyerAccount,
-              value: value.mul(new BN(conf['price'], 10))
-            });
+        var value = new BN('100', 10);
+
+        instance
+          .purchaseTokens({
+            from: buyerAccount,
+            value: value.mul(new BN(conf['price'], 10))
           })
           .then(function() {
             return getBalanceOf(buyerAccount);

@@ -29,13 +29,15 @@ contract Sales is Owned {
     string _tokenSymbol,
     uint _price,
     uint _startBlock,
-    uint _freezeBlock
+    uint _freezeBlock,
+    uint _cap
   ) {
     wallet = _wallet;
     token = new HumanStandardToken(_tokenSupply, _tokenName, _tokenDecimals, _tokenSymbol);
     price = _price;
     startBlock = _startBlock;
     freezeBlock = _freezeBlock;
+    cap = _cap;
 
     assert(token.transfer(this, token.totalSupply()));
     assert(token.balanceOf(this) == token.totalSupply());
