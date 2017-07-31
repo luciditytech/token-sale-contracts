@@ -1,9 +1,9 @@
 {
   "total": 1000000000000000000,
-  "name": "DreamCoin",
-  "symbol": "DRM",
+  "name": "ZToken",
+  "symbol": "ZTK",
   "decimals": 9,
-  "price": "57140",
-  "startBlock": "3939181",
-  "freezeBlock": "3937741"
+  "price": "2557181690000000",
+  "startBlock": "100",
+  "freezeBlock": "200"
 }

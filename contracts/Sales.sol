@@ -17,6 +17,7 @@ contract Sales is Owned {
 
   modifier saleHappening {
     require(block.number >= startBlock);
+    require(block.number <= freezeBlock);
     _;
   }
 

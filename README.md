@@ -8,3 +8,8 @@ They are based on Consensys' standard implementation of ERC20.
 The token sales contract implements the HumanStandardToken and inherits the following properties:
 
 * Initial Finite Supply (specified up initial deployment of the smart contract to the blockchain.)
+
+## TODO
+  - [ ] pre-sale
+  - [ ] official sale
+  - [ ] emergency toggle
