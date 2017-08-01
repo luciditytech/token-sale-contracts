@@ -25,6 +25,7 @@ module.exports = function(deployer, network, accounts) {
     conf['price'],
     conf['startBlock'],
     conf['freezeBlock'],
-    conf['cap']
+    conf['cap'],
+    conf['locked']
   );
 };

@@ -9,6 +9,17 @@ const EthQuery = require('ethjs-query');
 const ethRPC = new EthRPC(new HttpProvider('http://localhost:8545'));
 const ethQuery = new EthQuery(new HttpProvider('http://localhost:8545'));
 
+var moveForward = function(seconds) {
+  return new Promise((resolve, reject) => {
+    ethRPC.sendAsync({method: 'evm_increaseTime', params: [seconds]}, function(err, res) {
+      if (err !== undefined && err !== null) { 
+        reject(err);
+      }
+
+      resolve();
+    });
+  });
+}
 var takeSnapshot = function() {
   return new Promise((resolve, reject) => {
     ethRPC.sendAsync({method: 'evm_snapshot'}, function(err, res) {
@@ -141,7 +152,24 @@ contract('Sales', function(accounts) {
     it('should set the expected number of tokens for the contract as owner', function() {
       return getBalanceOf(instance.address)
         .then(function(result) {
-          assert.equal(result, 1000000000000000000);
+          assert.equal(result, 1000000000000000000 * 0.60);
+        });
+    });
+
+    it('should set the expected number of tokens for the owner', function() {
+      return getBalanceOf(ownerAccount)
+        .then(function(result) {
+          assert.equal(result, 1000000000000000000 * 0.20);
+        });
+    });
+
+    it('should set the expected number of tokens in escrow', function() {
+      return instance.locked.call()
+        .then(function(address) {
+          return getBalanceOf(address);
+        })
+        .then(function(result) {
+          assert.equal(result, 1000000000000000000 * 0.20);
         });
     });
   });
@@ -155,7 +183,7 @@ contract('Sales', function(accounts) {
     });
 
     describe('when there are enough tokens left', function() {
-      it('should set the expect eth balance', function() {
+      it('should set the expected token balance', function() {
         // var wei = web3.toWei('0.0030', 'Ether');
         var value = new BN('10', 10);
 
@@ -174,7 +202,63 @@ contract('Sales', function(accounts) {
     });
 
     describe('when the cap has been reached', function() {
+      beforeEach(function() {
+        var value = new BN(conf['cap'], 10);
 
+        return instance
+          .purchaseTokens(
+            {
+              from: buyerAccount,
+              value: value.mul(new BN(conf['price'], 10))
+            }
+          )
+          .then(function() {
+            return instance.sold();
+          }).then(function(sold) {
+            assert.equal(sold.toNumber(), conf['cap']);
+          });
+      });
+
+      it('should throw an exception', function(done) {
+        var value = new BN('10', 10);
+
+        instance
+          .purchaseTokens({
+            from: buyerAccount,
+            value: value.mul(new BN(conf['price'], 10))
+          })
+          .catch(function(err) {
+            assert.isDefined(err);
+            done();
+          })
+          .then(function(res) {
+            assert(res === undefined);
+          });
+      });
+
+      describe('when the cap is increased', function() {
+        beforeEach(function() {
+          var newCap = new BN(conf['cap'], 10).add(new BN(10, 10));
+          var buyValue = new BN('10', 10);
+
+          return instance
+            .changeCap(conf['cap'] + 10, {
+              from: ownerAccount
+            }).then(function() {
+              return instance.purchaseTokens({
+                from: buyerAccount,
+                value:  buyValue.mul(new BN(conf['price'], 10))
+              });
+            });
+        });
+
+        it('should set the expected token balance', function() {
+          return getBalanceOf(buyerAccount)
+            .then(function(result) {
+              assert.equal(result, 210);
+            });
+        });
+      });
     });
   });
 
@@ -233,6 +317,44 @@ contract('Sales', function(accounts) {
           })
           .then(function(res) {
             assert(res === undefined);
+          });
+      });
+    });
+  });
+
+  describe('when an owner tries to unlock tokens in escrow', function() {
+    describe('when the vesting period has not passed', function() {
+      it('should throw an exception', function(done) {
+        instance
+          .unlockEscrow({
+            from: ownerAccount
+          })
+          .catch(function(err) {
+            assert.isDefined(err);
+            done();
+          })
+          .then(function(res) {
+            assert(res === undefined);
+          });
+      });
+    });
+
+    describe('when the vesting period has passed', function() {
+      beforeEach(function() {
+        return moveForward(conf['locked']);
+      });
+
+      it('should set the expected token value', function() {
+        return instance
+          .unlockEscrow({
+            from: ownerAccount
+          })
+          .then(function() {
+            return getBalanceOf(ownerAccount);
+          })
+          .then(function(result) {
+            // console.log('owner balance after unlock: ' + result);
+            assert.equal(result, 1000000000000000000 * 0.40);
           });
       });
     });
