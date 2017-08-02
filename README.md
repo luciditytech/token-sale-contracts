@@ -12,7 +12,7 @@ The token sales contract implements the HumanStandardToken and inherits the foll
   * 20% will be distributed to owner's wallet
   * 10% will be sold during the pre-sale (capped @ configurable value)
   * 50% will be sold during the official sale (capped @ configurable value)
-  * 20% will held in a time-locked wallet, distributed to the owner per time period
+  * 20% will held in a time-locked wallet, distributed to the owner after a configurable vesting period
 
 ## Handling contractors during pre-sale period
 
