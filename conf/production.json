@@ -1,0 +1,11 @@
+{
+  "total": 1000000000000000000,
+  "name": "Z-Token",
+  "symbol": "ZTK",
+  "decimals": 9,
+  "price": 250000000000000,
+  "startBlock": 4107081,
+  "freezeBlock": 4282290,
+  "cap": 20000000,
+  "locked": 31104000
+}
