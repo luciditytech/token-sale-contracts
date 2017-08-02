@@ -98,7 +98,7 @@ contract Sales is Owned {
   }
 
   function unlockEscrow()
-    onlyOwner{
+    onlyOwner {
     assert((now - created) > locked.period());
     assert(token.transfer(wallet, token.balanceOf(locked)));
   }

@@ -9,10 +9,9 @@ The token sales contract implements the HumanStandardToken and inherits the foll
 
 ## Token Distribution
 
-  * All tokens are initial given to the contract itself.
-  * 10% will be distributed to owner's wallet
-  * 10% will be sold during the pre-sale (capped @ $5MM)
-  * 60% will be sold during the official sale (capped @ $15MM)
+  * 20% will be distributed to owner's wallet
+  * 10% will be sold during the pre-sale (capped @ configurable value)
+  * 50% will be sold during the official sale (capped @ configurable value)
   * 20% will held in a time-locked wallet, distributed to the owner per time period
 
 ## Handling contractors during pre-sale period
