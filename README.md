@@ -33,8 +33,3 @@ testrpc \
 ```
 truffle test
 ```
-
-## TODO
-  - [ ] pre-sale
-  - [ ] official sale
-  - [ ] emergency toggle
