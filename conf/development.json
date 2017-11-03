@@ -3,7 +3,7 @@
   "name": "Marketing Analytics Token",
   "symbol": "MAT",
   "decimals": 9,
-  "price": 50000,
+  "price": 49000,
   "startBlock": 1994303,
   "freezeBlock": 2994303,
   "cap": "20000000000000000",
