@@ -185,12 +185,11 @@ contract('Sales', function(accounts) {
     describe('when there are enough tokens left', function() {
       it('should set the expected token balance', function() {
         // var wei = web3.toWei('0.0030', 'Ether');
-        var value = new BN('10', 10);
 
         return instance
           .purchaseTokens({
             from: buyerAccount,
-            value: value.mul(new BN(conf['price'], 10))
+            value: new BN('10', 10).mul(new BN(conf['price'], 10))
           })
           .then(function() {
             return getBalanceOf(buyerAccount);
@@ -203,13 +202,11 @@ contract('Sales', function(accounts) {
 
     describe('when the cap has been reached', function() {
       beforeEach(function() {
-        var value = new BN(conf['cap'], 10);
-
         return instance
           .purchaseTokens(
             {
               from: buyerAccount,
-              value: value.mul(new BN(conf['price'], 10))
+              value: new BN(conf['cap'], 10).mul(new BN(conf['price'], 10))
             }
           )
           .then(function() {
@@ -238,16 +235,15 @@ contract('Sales', function(accounts) {
 
       describe('when the cap is increased', function() {
         beforeEach(function() {
-          var newCap = new BN(conf['cap'], 10).add(new BN(10, 10));
-          var buyValue = new BN('10', 10);
+          var wei = web3.toWei('1.00', 'Ether');
 
           return instance
-            .changeCap(conf['cap'] + 10, {
+            .changeCap('200000000000000000', {
               from: ownerAccount
             }).then(function() {
               return instance.purchaseTokens({
                 from: buyerAccount,
-                value:  buyValue.mul(new BN(conf['price'], 10))
+                value:  wei
               });
             });
         });
@@ -255,7 +251,7 @@ contract('Sales', function(accounts) {
         it('should set the expected token balance', function() {
           return getBalanceOf(buyerAccount)
             .then(function(result) {
-              assert.equal(result, 210);
+              assert.equal(result, 100020000000000000);
             });
         });
       });

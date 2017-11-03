@@ -4,6 +4,8 @@ import "./Owned.sol";
 import "./HumanStandardToken.sol";
 import "./Locked.sol";
 
+import './SafeMath.sol';
+
 contract Sales is Owned {
   address public wallet;
   HumanStandardToken public token;
@@ -47,13 +49,13 @@ contract Sales is Owned {
     cap = _cap;
     created = now;
 
-    uint256 ownersValue = (token.totalSupply() * 20) / 100;
+    uint256 ownersValue = SafeMath.div(SafeMath.mul(token.totalSupply(), 20), 100);
     assert(token.transfer(wallet, ownersValue));
 
-    uint256 saleValue = (token.totalSupply() * 60) / 100;
+    uint256 saleValue = SafeMath.div(SafeMath.mul(token.totalSupply(), 60), 100);
     assert(token.transfer(this, saleValue));
 
-    uint256 lockedValue = token.totalSupply() - (ownersValue + saleValue);
+    uint256 lockedValue = SafeMath.sub(token.totalSupply(), SafeMath.add(ownersValue, saleValue));
     assert(token.transfer(locked, lockedValue));
   }
 
@@ -61,8 +63,8 @@ contract Sales is Owned {
     payable
     saleHappening {
     uint excessAmount = msg.value % price;
-    uint purchaseAmount = msg.value - excessAmount;
-    uint tokenPurchase = purchaseAmount / price;
+    uint purchaseAmount = SafeMath.sub(msg.value, excessAmount);
+    uint tokenPurchase = SafeMath.div(purchaseAmount, price);
 
     require(tokenPurchase <= token.balanceOf(this));
 
@@ -70,7 +72,8 @@ contract Sales is Owned {
       msg.sender.transfer(excessAmount);
     }
 
-    sold += tokenPurchase;
+    sold = SafeMath.add(sold, tokenPurchase);
+    assert(sold <= cap);
     wallet.transfer(purchaseAmount);
     assert(token.transfer(msg.sender, tokenPurchase));
     PurchasedTokens(msg.sender, tokenPurchase);

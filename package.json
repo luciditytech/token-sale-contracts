@@ -1,7 +1,7 @@
 {
-  "name": "dreamcoin-sales-contracts",
-  "version": "0.0.1",
-  "description": "Sale contracts for DreamCoin",
+  "name": "token-sale-contracts",
+  "version": "0.1.0",
+  "description": "Typical Ethereum based Sale Contracts",
   "scripts": {
     "test": "test"
   },
@@ -10,6 +10,7 @@
   "dependencies": {
     "bip39": "2.3.1",
     "bn.js": "4.11.6",
+    "ethereumjs-abi": "^0.6.4",
     "ethjs-provider-http": "0.1.6",
     "ethjs-query": "0.2.4",
     "ethjs-rpc": "0.1.5",
