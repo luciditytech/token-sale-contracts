@@ -6,9 +6,9 @@ module.exports = {
       network_id: '*' // Match any network id
     },
     ropsten: {
-      host: '172.31.47.145',
+      host: '172.31.80.135',
       port: 8545,
-      network_id: 1,
+      network_id: '*',
       gas: 4600000
     },
     live: {
