@@ -1,12 +1,9 @@
-pragma solidity ^0.4.11;
-
-import "./Token.sol";
-import "./Owned.sol";
+pragma solidity ^0.5.0;
 
 contract Locked {
   uint public period;
 
-  function Locked(uint _period) public {
+  constructor (uint _period) public {
     period = _period;
   }
 }

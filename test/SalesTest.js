@@ -1,8 +1,8 @@
 const Sales = artifacts.require('Sales');
 const HumanStandardToken = artifacts.require('HumanStandardToken');
 
-const fs = require(`fs`);
-const BN = require(`bn.js`);
+const fs = require('fs');
+const BN = require('bn.js');
 const HttpProvider = require('ethjs-provider-http');
 const EthRPC = require('ethjs-rpc');
 const EthQuery = require('ethjs-query');
@@ -59,7 +59,9 @@ var mineBlock = function(newBlockNumber) {
             if (err !== undefined && err !== null) { 
               reject(err);
             }
-
+            if (blockNumber % 50 === 0) {
+              // console.log(`please wait, mining... current block number: ${blockNumber}, target block: ${newBlockNumber.toString(10)}`);
+            }
             resolve(mineBlock(newBlockNumber));
           });
         } else {
@@ -70,7 +72,7 @@ var mineBlock = function(newBlockNumber) {
 }
 
 var getTotalSupply = function() {
-  var promise = new Promise(function(resolve, reject) {
+  return new Promise(function(resolve, reject) {
     Sales
       .deployed()
       .then(function (instance) {
@@ -83,18 +85,16 @@ var getTotalSupply = function() {
         return token.totalSupply.call()
       })
       .then(function (result) {
-        resolve(result.toNumber());
+        resolve(result.toString());
       })
       .catch(function(err) { 
         reject(new Error(err));
       });
   });
-
-  return promise;
 }
 
 var getBalanceOf = function(address) {
-  var promise = new Promise(function(resolve, reject) {
+  return new Promise(function(resolve, reject) {
     Sales
       .deployed()
       .then(function (instance) {
@@ -107,14 +107,12 @@ var getBalanceOf = function(address) {
         return token.balanceOf.call(address)
       })
       .then(function (result) {
-        resolve(result.toNumber());
+        resolve(result.toString());
       })
       .catch(function(err) { 
         reject(new Error(err));
       });
   });
-
-  return promise;
 }
 
 contract('Sales', function(accounts) {
@@ -145,21 +143,23 @@ contract('Sales', function(accounts) {
     it('should set the expected total supply', function() {
       return getTotalSupply()
         .then(function(result) {
-          assert.equal(result, 1000000000000000000);
+          assert.equal(result, conf.total);
         });
     });
 
     it('should set the expected number of tokens for the contract as owner', function() {
       return getBalanceOf(instance.address)
         .then(function(result) {
-          assert.equal(result, 1000000000000000000 * 0.60);
+          const bn = new BN(conf.total, 10);
+          assert.equal(result, bn.mul(new BN(6, 10)).div(new BN(10, 10)).toString());
         });
     });
 
     it('should set the expected number of tokens for the owner', function() {
       return getBalanceOf(ownerAccount)
         .then(function(result) {
-          assert.equal(result, 1000000000000000000 * 0.20);
+          const bn = new BN(conf.total, 10);
+          assert.equal(result, bn.mul(new BN(2, 10)).div(new BN(10, 10)).toString());
         });
     });
 
@@ -169,7 +169,8 @@ contract('Sales', function(accounts) {
           return getBalanceOf(address);
         })
         .then(function(result) {
-          assert.equal(result, 1000000000000000000 * 0.20);
+          const bn = new BN(conf.total, 10);
+          assert.equal(result, bn.mul(new BN(2, 10)).div(new BN(10, 10)).toString());
         });
     });
   });
@@ -202,17 +203,18 @@ contract('Sales', function(accounts) {
 
     describe('when the cap has been reached', function() {
       beforeEach(function() {
+        const bn = new BN(conf['cap'], 10).mul(new BN(conf['price'], 10));
         return instance
           .purchaseTokens(
             {
               from: buyerAccount,
-              value: new BN(conf['cap'], 10).mul(new BN(conf['price'], 10))
+              value: bn.toString(10)
             }
           )
           .then(function() {
-            return instance.sold();
+            return instance.sold.call();
           }).then(function(sold) {
-            assert.equal(sold.toNumber(), conf['cap']);
+            assert.equal(sold.toString(), conf['cap']);
           });
       });
 
@@ -224,6 +226,9 @@ contract('Sales', function(accounts) {
             from: buyerAccount,
             value: value.mul(new BN(conf['price'], 10))
           })
+          .then(res => {
+            assert(false, 'should throw');
+          })
           .catch(function(err) {
             assert.isDefined(err);
             done();
@@ -234,16 +239,25 @@ contract('Sales', function(accounts) {
       });
 
       describe('when the cap is increased', function() {
+        let blanceBefore;
+        var tokenBought = 1000000000;
+
         beforeEach(function() {
-          var wei = web3.toWei('1.00', 'Ether');
+
 
           return instance
-            .changeCap('200000000000000000', {
+            .changeCap('300000000000000', {
               from: ownerAccount
             }).then(function() {
+              return getBalanceOf(buyerAccount);
+            }).then(b => {
+              balanceBefore = new BN(b);
+
+              const wei = new BN(tokenBought, 10).mul(new BN(conf.price, 10));
+
               return instance.purchaseTokens({
                 from: buyerAccount,
-                value:  wei
+                value:  wei.toString(10)
               });
             });
         });
@@ -251,7 +265,7 @@ contract('Sales', function(accounts) {
         it('should set the expected token balance', function() {
           return getBalanceOf(buyerAccount)
             .then(function(result) {
-              assert.equal(result, 100020000000000000);
+              assert.equal(result, balanceBefore.add(new BN(tokenBought)).toString(10));
             });
         });
       });
@@ -350,7 +364,8 @@ contract('Sales', function(accounts) {
           })
           .then(function(result) {
             // console.log('owner balance after unlock: ' + result);
-            assert.equal(result, 1000000000000000000 * 0.40);
+            const bn = new BN(conf.total, 10);
+            assert.equal(result, bn.mul(new BN(4, 10)).div(new BN(10, 10)).toString());
           });
       });
     });
