@@ -1,13 +1,14 @@
-pragma solidity ^0.4.11;
+pragma solidity ^0.5.0;
+
 
 import "./Owned.sol";
 import "./HumanStandardToken.sol";
 import "./Locked.sol";
 
-import './SafeMath.sol';
+import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 
 contract Sales is Owned {
-  address public wallet;
+  address payable public wallet;
   HumanStandardToken public token;
   Locked public locked;
   uint public price;
@@ -21,25 +22,25 @@ contract Sales is Owned {
   event PurchasedTokens(address indexed purchaser, uint amount);
 
   modifier saleHappening {
-    require(block.number >= startBlock);
-    require(block.number <= freezeBlock);
-    require(!frozen);
-    require(sold < cap);
+    require(block.number >= startBlock, "block.number >= startBlock");
+    require(block.number <= freezeBlock, "block.number <= freezeBlock");
+    require(!frozen, "tokens are frozen");
+    require(sold < cap, "tokens sold out");
     _;
   }
 
-  function Sales(
-    address _wallet,
+  constructor (
+    address payable _wallet,
     uint256 _tokenSupply,
-    string _tokenName,
+    string memory _tokenName,
     uint8 _tokenDecimals,
-    string _tokenSymbol,
+    string memory _tokenSymbol,
     uint _price,
     uint _startBlock,
     uint _freezeBlock,
     uint256 _cap,
     uint _locked
-  ) {
+  ) public {
     wallet = _wallet;
     token = new HumanStandardToken(_tokenSupply, _tokenName, _tokenDecimals, _tokenSymbol);
     locked = new Locked(_locked);
@@ -53,20 +54,22 @@ contract Sales is Owned {
     assert(token.transfer(wallet, ownersValue));
 
     uint256 saleValue = SafeMath.div(SafeMath.mul(token.totalSupply(), 60), 100);
-    assert(token.transfer(this, saleValue));
+    assert(token.transfer(address(this), saleValue));
 
     uint256 lockedValue = SafeMath.sub(token.totalSupply(), SafeMath.add(ownersValue, saleValue));
-    assert(token.transfer(locked, lockedValue));
+    assert(token.transfer(address(locked), lockedValue));
   }
 
   function purchaseTokens()
+    public
     payable
-    saleHappening {
+    saleHappening
+  {
     uint excessAmount = msg.value % price;
     uint purchaseAmount = SafeMath.sub(msg.value, excessAmount);
     uint tokenPurchase = SafeMath.div(purchaseAmount, price);
 
-    require(tokenPurchase <= token.balanceOf(this));
+    require(tokenPurchase <= token.balanceOf(address(this)), "tokenPurchase <= token.balanceOf(this)");
 
     if (excessAmount > 0) {
       msg.sender.transfer(excessAmount);
@@ -76,11 +79,11 @@ contract Sales is Owned {
     assert(sold <= cap);
     wallet.transfer(purchaseAmount);
     assert(token.transfer(msg.sender, tokenPurchase));
-    PurchasedTokens(msg.sender, tokenPurchase);
+    emit PurchasedTokens(msg.sender, tokenPurchase);
   }
 
   /* owner only functions */
-  function changeBlocks(uint _newStartBlock, uint _newFreezeBlock)
+  function changeBlocks(uint _newStartBlock, uint _newFreezeBlock) public
     onlyOwner {
     require(_newStartBlock != 0);
     require(_newFreezeBlock >= _newStartBlock);
@@ -88,25 +91,25 @@ contract Sales is Owned {
     freezeBlock = _newFreezeBlock;
   }
 
-  function changePrice(uint _newPrice) 
+  function changePrice(uint _newPrice) public
     onlyOwner {
     require(_newPrice > 0);
     price = _newPrice;
   }
 
-  function changeCap(uint256 _newCap)
+  function changeCap(uint256 _newCap) public
     onlyOwner {
     require(_newCap > 0);
     cap = _newCap;
   }
 
-  function unlockEscrow()
+  function unlockEscrow() public
     onlyOwner {
     assert((now - created) > locked.period());
-    assert(token.transfer(wallet, token.balanceOf(locked)));
+    assert(token.transfer(wallet, token.balanceOf(address(locked))));
   }
 
-  function toggleFreeze()
+  function toggleFreeze() public
     onlyOwner {
       frozen = !frozen;
   }
