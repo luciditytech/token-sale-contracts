@@ -12,45 +12,40 @@ Machine-based, rapid creation of many tokens would not necessarily need these ex
 .*/
 pragma solidity ^0.5.0;
 
+import "./interfaces/IHumanStandardTokenStorage.sol";
+import "./interfaces/IHumanStandardToken.sol";
 import "./StandardToken.sol";
+import "./Owned.sol";
 
+contract HumanStandardToken is IHumanStandardToken, Owned, StandardToken {
 
-contract HumanStandardToken is StandardToken {
+    IHumanStandardTokenStorage hstStorage;
 
     function () external {
         //if ether is sent to this address, send it back.
         revert();
     }
 
-    /* Public variables of the token */
-
-    /*
-    NOTE:
-    The following variables are OPTIONAL vanities. One does not have to include them.
-    They allow one to customise the token contract & in no way influences the core functionality.
-    Some wallets/interfaces might not even bother to look at this information.
-    */
-    string public name;                   //fancy name: eg Simon Bucks
-    uint8 public decimals;                //How many decimals to show. ie. There could 1000 base units with 3 decimals. Meaning 0.980 SBX = 980 base units. It's like comparing 1 wei to 1 ether.
-    string public symbol;                 //An identifier: eg SBX
-    string public version = 'H0.1';       //human 0.1 standard. Just an arbitrary versioning scheme.
-
     constructor (
-        uint256 _initialAmount,
-        string memory _tokenName,
-        uint8 _decimalUnits,
-        string memory _tokenSymbol
-        ) public {
-        balances[msg.sender] = _initialAmount;               // Give the creator all initial tokens
-        totalSupply = _initialAmount;                        // Update total supply
-        name = _tokenName;                                   // Set the name for display purposes
-        decimals = _decimalUnits;                            // Amount of decimals for display purposes
-        symbol = _tokenSymbol;                               // Set the symbol for display purposes
+        address _registry,
+        IStorageBase _storage
+        )
+    public
+    StandardToken(_registry, _storage) {
+        hstStorage = IHumanStandardTokenStorage(address(singleStorage));
+    }
+
+    function changeStorage(address _storage)
+    external
+    onlyOwner {
+        require(_storage != address(0x0), "storage can't be empty");
+        singleStorage = IStorageBase(_storage);
+        hstStorage = IHumanStandardTokenStorage(_storage);
     }
 
     /* Approves and then calls the receiving contract */
-    function approveAndCall(address _spender, uint256 _value, bytes memory _extraData) public returns (bool) {
-        allowed[msg.sender][_spender] = _value;
+    function approveAndCall(address _spender, uint256 _value, bytes calldata _extraData) external returns (bool) {
+        hstStorage.setAllowed(msg.sender, _spender,  _value);
         emit Approval(msg.sender, _spender, _value);
 
         bool success;

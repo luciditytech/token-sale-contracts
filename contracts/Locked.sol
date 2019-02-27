@@ -1,9 +1,9 @@
 pragma solidity ^0.5.0;
 
 contract Locked {
-  uint public period;
+  uint256 public period;
 
-  constructor (uint _period) public {
+  constructor (uint256 _period) public {
     period = _period;
   }
 }

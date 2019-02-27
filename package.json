@@ -14,15 +14,16 @@
   "dependencies": {
     "bip39": "2.5.0",
     "bn.js": "4.11.8",
-    "ethereumjs-abi": "^0.6.6",
+    "contract-registry": "git@github.com:luciditytech/contract-registry.git#f54699a63c3f8c05081dff8575cba27462bfabee",
+    "ethereumjs-abi": "0.6.6",
     "ethjs-provider-http": "0.1.6",
     "ethjs-query": "0.3.8",
     "ethjs-rpc": "0.2.0",
-    "truffle": "^5.0.3",
-    "truffle-hdwallet-provider": "1.0.3",
+    "truffle": "5.0.5",
+    "truffle-hdwallet-provider": "1.0.4",
     "openzeppelin-solidity": "2.1.2"
   },
   "devDependencies": {
-    "ganache-cli": "^6.3.0"
+    "ganache-cli": "6.3.0"
   }
 }

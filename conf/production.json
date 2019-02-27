@@ -8,5 +8,8 @@
   "startBlock": 4139704,
   "freezeBlock": 4490104,
   "cap": "20000000000000000",
-  "locked": 31104000
+  "locked": 31104000,
+  "humanStandardTokenStorage": "",
+  "humanStandardToken": "",
+  "salesStorage": ""
 }

@@ -1,63 +1,85 @@
 pragma solidity ^0.5.0;
 
+import "contract-registry/contracts/RegistrableWithSingleStorage.sol";
 
+import "./interfaces/ISalesStorage.sol";
+import "./interfaces/IHumanStandardToken.sol";
+import "./HumanStandardTokenStorage.sol";
 import "./Owned.sol";
-import "./HumanStandardToken.sol";
 import "./Locked.sol";
 
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 
-contract Sales is Owned {
-  address payable public wallet;
-  HumanStandardToken public token;
-  Locked public locked;
-  uint public price;
-  uint public startBlock;
-  uint public freezeBlock;
-  bool public frozen = false;
-  uint256 public cap = 0;
-  uint256 public sold = 0;
-  uint created;
+contract Sales is Owned, RegistrableWithSingleStorage {
 
-  event PurchasedTokens(address indexed purchaser, uint amount);
+  using SafeMath for uint256;
+
+  ISalesStorage sStorage;
+  IHumanStandardToken public token;
+  Locked public locked;
+
+  address public humanStandardTokenStorage;
+
+  event PurchasedTokens(address indexed purchaser, uint256 amount);
 
   modifier saleHappening {
-    require(block.number >= startBlock, "block.number >= startBlock");
-    require(block.number <= freezeBlock, "block.number <= freezeBlock");
-    require(!frozen, "tokens are frozen");
-    require(sold < cap, "tokens sold out");
+    require(block.number >= sStorage.startBlock(), "block.number >= startBlock");
+    require(block.number <= sStorage.freezeBlock(), "block.number <= freezeBlock");
+    require(!sStorage.frozen(), "tokens are frozen");
+    require(sStorage.sold() < sStorage.cap(), "tokens sold out");
     _;
   }
 
   constructor (
-    address payable _wallet,
-    uint256 _tokenSupply,
+    uint256 _initialAmount,
     string memory _tokenName,
-    uint8 _tokenDecimals,
+    uint8 _decimalUnits,
     string memory _tokenSymbol,
-    uint _price,
-    uint _startBlock,
-    uint _freezeBlock,
-    uint256 _cap,
-    uint _locked
-  ) public {
-    wallet = _wallet;
-    token = new HumanStandardToken(_tokenSupply, _tokenName, _tokenDecimals, _tokenSymbol);
+
+    address _wallet,
+    uint256 _locked,
+    IHumanStandardToken _token,
+    address _registry,
+    IStorageBase _salesStorage
+  )
+  public
+  RegistrableWithSingleStorage(_registry, _salesStorage) {
+    sStorage = ISalesStorage(address(_salesStorage));
+    token = _token;
+    require(sStorage.wallet() == _wallet, "token need to have same wallet");
+
     locked = new Locked(_locked);
-    price = _price;
-    startBlock = _startBlock;
-    freezeBlock = _freezeBlock;
-    cap = _cap;
-    created = now;
 
-    uint256 ownersValue = SafeMath.div(SafeMath.mul(token.totalSupply(), 20), 100);
-    assert(token.transfer(wallet, ownersValue));
+    HumanStandardTokenStorage tokenStorage = new HumanStandardTokenStorage(
+      _initialAmount,
+      _tokenName,
+      _decimalUnits,
+      _tokenSymbol
+    );
+    humanStandardTokenStorage = address(tokenStorage);
 
-    uint256 saleValue = SafeMath.div(SafeMath.mul(token.totalSupply(), 60), 100);
-    assert(token.transfer(address(this), saleValue));
+    tokenStorage.initStorageOwner(address(this));
 
-    uint256 lockedValue = SafeMath.sub(token.totalSupply(), SafeMath.add(ownersValue, saleValue));
-    assert(token.transfer(address(locked), lockedValue));
+    uint256 ownersValue = _initialAmount.mul(20).div(100);
+    tokenStorage.setBalance(_wallet, ownersValue);
+
+    uint256 saleValue = _initialAmount.mul(60).div(100);
+    tokenStorage.setBalance(address(this), saleValue);
+
+    uint256 lockedValue = _initialAmount.sub(ownersValue.add(saleValue));
+    tokenStorage.setBalance(address(locked), lockedValue);
+
+    require(tokenStorage.switchOwnerTo(address(_token)), "switching owner for tokens storage failed");
+
+    // DEBUG ONLY!
+    require(_initialAmount == 10000000000000000, "_initialAmount == ");
+    require(ownersValue == 2000000000000000, "ownersValue ==");
+    require(saleValue == 6000000000000000, "saleValue ==");
+    require(lockedValue == 2000000000000000, "lockedValue ==");
+
+    require(tokenStorage.balances(_wallet)==ownersValue, "invalid ownersValue");
+    require(tokenStorage.balances(address(this))==saleValue, "invalid saleValue");
+    require(tokenStorage.balances(address(locked))==lockedValue, "invalid lockedValue");
   }
 
   function purchaseTokens()
@@ -65,9 +87,9 @@ contract Sales is Owned {
     payable
     saleHappening
   {
-    uint excessAmount = msg.value % price;
-    uint purchaseAmount = SafeMath.sub(msg.value, excessAmount);
-    uint tokenPurchase = SafeMath.div(purchaseAmount, price);
+    uint256 excessAmount = msg.value % sStorage.price();
+    uint256 purchaseAmount = SafeMath.sub(msg.value, excessAmount);
+    uint256 tokenPurchase = SafeMath.div(purchaseAmount, sStorage.price());
 
     require(tokenPurchase <= token.balanceOf(address(this)), "tokenPurchase <= token.balanceOf(this)");
 
@@ -75,42 +97,69 @@ contract Sales is Owned {
       msg.sender.transfer(excessAmount);
     }
 
-    sold = SafeMath.add(sold, tokenPurchase);
-    assert(sold <= cap);
-    wallet.transfer(purchaseAmount);
+    uint256 sold = sStorage.sold().add(tokenPurchase);
+    sStorage.setSold(sold);
+    assert(sold <= sStorage.cap());
+    sStorage.wallet().transfer(purchaseAmount);
     assert(token.transfer(msg.sender, tokenPurchase));
     emit PurchasedTokens(msg.sender, tokenPurchase);
   }
 
   /* owner only functions */
-  function changeBlocks(uint _newStartBlock, uint _newFreezeBlock) public
+  function changeBlocks(uint256 _newStartBlock, uint256 _newFreezeBlock) public
     onlyOwner {
     require(_newStartBlock != 0);
     require(_newFreezeBlock >= _newStartBlock);
-    startBlock = _newStartBlock;
-    freezeBlock = _newFreezeBlock;
+    sStorage.setStartBlock(_newStartBlock);
+    sStorage.setFreezeBlock(_newFreezeBlock);
   }
 
-  function changePrice(uint _newPrice) public
+  function changePrice(uint256 _newPrice) public
     onlyOwner {
     require(_newPrice > 0);
-    price = _newPrice;
+    sStorage.setPrice(_newPrice);
   }
 
   function changeCap(uint256 _newCap) public
     onlyOwner {
     require(_newCap > 0);
-    cap = _newCap;
+    sStorage.setCap(_newCap);
   }
 
   function unlockEscrow() public
     onlyOwner {
-    assert((now - created) > locked.period());
-    assert(token.transfer(wallet, token.balanceOf(address(locked))));
+    assert((now - sStorage.created()) > locked.period());
+    assert(token.transfer(sStorage.wallet(), token.balanceOf(address(locked))));
   }
 
   function toggleFreeze() public
     onlyOwner {
-      frozen = !frozen;
+    sStorage.toggleFrozen();
+  }
+
+
+  function startBlock() external view returns (uint256) {
+    return sStorage.startBlock();
+  }
+  function freezeBlock() external view returns (uint256){
+    return sStorage.freezeBlock();
+  }
+  function frozen() external view returns (bool){
+    return sStorage.frozen();
+  }
+  function sold() external view returns (uint256){
+    return sStorage.sold();
+  }
+  function cap() external view returns (uint256){
+    return sStorage.cap();
+  }
+  function price() external view returns (uint256){
+    return sStorage.price();
+  }
+  function wallet() external view returns (address payable){
+    return sStorage.wallet();
+  }
+  function created() external view returns (uint256){
+    return sStorage.created();
   }
 }

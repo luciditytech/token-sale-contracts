@@ -2,18 +2,18 @@
 // https://github.com/ethereum/EIPs/issues/20
 pragma solidity ^0.5.0;
 
-contract Token {
-    /* This is a slight change to the ERC20 base standard.
-    function totalSupply() constant returns (uint256 supply);
-    is replaced with:
-    uint256 public totalSupply;
-    This automatically creates a getter function for the totalSupply.
-    This is moved to the base contract since public getter functions are not
-    currently recognised as an implementation of the matching abstract
-    function by the compiler.
-    */
-    /// total amount of tokens
-    uint256 public totalSupply;
+import "contract-registry/contracts/RegistrableWithSingleStorage.sol";
+import "./interfaces/ITokenStorage.sol";
+
+contract Token is RegistrableWithSingleStorage {
+
+    constructor(address _registry, IStorageBase _storage)
+    public
+    RegistrableWithSingleStorage(_registry, _storage) {}
+
+    function totalSupply() public view returns (uint256) {
+        return ITokenStorage(address(singleStorage)).totalSupply();
+    }
 
     /// @param _owner The address from which the balance will be retrieved
     /// @return The balance
