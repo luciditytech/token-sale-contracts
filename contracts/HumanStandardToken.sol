@@ -10,7 +10,7 @@ Machine-based, rapid creation of many tokens would not necessarily need these ex
 3) Optional approveAndCall() functionality to notify a contract if an approval() has occurred.
 
 .*/
-pragma solidity ^0.5.0;
+pragma solidity 0.5.0;
 
 import "./StandardToken.sol";
 

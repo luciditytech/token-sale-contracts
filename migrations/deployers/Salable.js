@@ -1,9 +1,7 @@
 const abi = require('ethereumjs-abi');
-const getConfig = require('./inc/getConfig');
+const getConfig = require('../inc/getConfig');
 
-const Sales = artifacts.require('Sales');
-
-module.exports = (deployer, network, accounts) => {
+module.exports = (deployer, network, accounts, SalableArtifact) => deployer.then(async () => {
   const { config, wallet } = getConfig(network, accounts);
 
   // assert.ok(wallet);
@@ -39,10 +37,10 @@ module.exports = (deployer, network, accounts) => {
     args,
   );
 
-  console.log(`encoded argument for Sales contract: ${encoded.toString('hex')}`);
+  console.log(`encoded argument for Salable contract: ${encoded.toString('hex')}`);
 
   return deployer.deploy(
-    Sales,
+    SalableArtifact,
     wallet,
     config.total,
     config.name,
@@ -54,4 +52,4 @@ module.exports = (deployer, network, accounts) => {
     config.cap,
     config.locked,
   );
-};
+});

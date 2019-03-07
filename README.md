@@ -30,16 +30,13 @@ npm install
 ## Launch testrpc
 
 ```
-testrpc \
-  --account="0xb44d5ae914d16e93972f70a4a73d87420e0150173bef79d9945b736d69825247,10000000000000000000000000" \
-  --account="0x72fc90dc0ec9bc20efd2c47791605406564a6b25b3b479bca53134fe6c2dd2aa,10000000000000000000000000" \
-  --gasPrice 40000000000
+ganache-cli
 ```
 
 ## Testing
 
 ```
-truffle test
+npm run test
 ```
 
 ## Verifying w/ Oyente

@@ -1,4 +1,4 @@
-pragma solidity ^0.5.0;
+pragma solidity 0.5.0;
 
 
 import "./Owned.sol";
@@ -41,6 +41,14 @@ contract Sales is Owned {
     uint256 _cap,
     uint _locked
   ) public {
+    /*
+      TODO
+      when locked tokens are transfer to Locked.address they are lost forever.
+      then, when `unlockEscrow()` is called, transfer is made from totalSupply not from Locked.address
+      as a result, totalSupply will have less tokens to sell by amount of locked tokens.
+      Since we might not need this contract  anymore, I just leave this note.
+      When we need it - this must be fixed.
+    */
     wallet = _wallet;
     token = new HumanStandardToken(_tokenSupply, _tokenName, _tokenDecimals, _tokenSymbol);
     locked = new Locked(_locked);

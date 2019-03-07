@@ -1,0 +1,11 @@
+module.exports = {
+  total: '10000000000000000',
+  name: 'Marketing Analytics Token',
+  symbol: 'MAT',
+  decimals: 9,
+  price: 49000,
+  startBlock: 103,
+  freezeBlock: 203,
+  cap: '200000000000000',
+  locked: 31104000
+};
