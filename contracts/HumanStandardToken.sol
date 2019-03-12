@@ -56,10 +56,9 @@ contract HumanStandardToken is StandardToken {
         bool success;
         bytes memory ret;
 
-        //call the receiveApproval function on the contract you want to be notified. This crafts the function signature manually so one doesn't have to include a contract in here just for this.
-        //receiveApproval(address _from, uint256 _value, address _tokenContract, bytes _extraData)
-        //it is assumed that when does this that the call *should* succeed, otherwise one would use vanilla approve instead.
-        (success, ret) = _spender.call(abi.encodePacked(bytes4(bytes32(keccak256("receiveApproval(address,uint256,address,bytes)"))), msg.sender, _value, this, _extraData));
+        // sig: keccak256("receiveApproval(address,uint256,address,bytes)")
+        (success, ) = _spender.call(abi.encodeWithSelector(bytes4(0x8f4ffcb1), msg.sender, _value, this, _extraData));
+
         if(!success) {
             revert();
         }
